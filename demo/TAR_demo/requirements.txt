@@ -1,0 +1,7 @@
+# TAR (门限自回归 SETAR) demo 依赖 (tar_demo.py)
+# TAR 估计=分段 OLS、预测=蒙特卡洛, 全部手写, 无需专用包
+numpy>=2.2
+scipy>=1.15
+pandas>=2.2
+matplotlib>=3.10
+statsmodels>=0.14
