@@ -1,0 +1,8 @@
+# VARMA (向量自回归滑动平均) demo 依赖 (varma_demo.py)
+# 识别=Psi权重公因子等价演示+正规化; 估计=Hannan-Rissanen暖启动+条件MLE(含AR+MA, Sigma集中并出)
+# 检验=多元Ljung-Box Q_k(m)+CCM符号表; 预测=AR+MA递推+Psi权重误差协方差; 全部手写(numpy/scipy), 无需 VARMAX
+numpy>=2.2
+scipy>=1.15
+pandas>=2.2
+matplotlib>=3.10
+statsmodels>=0.14

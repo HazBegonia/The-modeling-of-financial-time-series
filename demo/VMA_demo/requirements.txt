@@ -1,0 +1,8 @@
+# VMA (向量滑动平均) demo 依赖 (vma_demo.py)
+# 定阶=样本CCM截尾; 估计=条件MLE反推冲击(scipy.minimize, Sigma集中并出); 检验=多元Ljung-Box Q_k(m)+CCM符号表
+# 预测=有限记忆递推(>q步回均值)+Theta权重误差协方差; 全部手写(numpy/scipy), 无需专用 VARMA 包
+numpy>=2.2
+scipy>=1.15
+pandas>=2.2
+matplotlib>=3.10
+statsmodels>=0.14
