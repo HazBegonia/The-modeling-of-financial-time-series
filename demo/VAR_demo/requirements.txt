@@ -1,0 +1,8 @@
+# VAR (向量自回归) demo 依赖 (var_demo.py)
+# 估计=逐方程 OLS; 定阶=M(i)似然比(式8.18)+AIC/BIC/HQ; 检验=多元Ljung-Box Q_k(m)+CCM符号表
+# 预测=向量递推+Psi权重误差协方差; Granger因果=单方程F; 全部手写(仅 numpy/scipy/pandas), 无需专用 VAR 包
+numpy>=2.2
+scipy>=1.15
+pandas>=2.2
+matplotlib>=3.10
+statsmodels>=0.14
