@@ -65,19 +65,22 @@ ax[0].plot(train.values, lw=0.9)
 ax[0].axhline(train.mean(), color="r", ls="--", lw=1, label=f"mean={train.mean():.1f}")
 ax[0].set_title("Series (weakly stationary)"); ax[0].legend(loc="upper right")
 plot_acf(train, lags=25, ax=ax[1], zero=False); ax[1].set_title("ACF (tails off -> AR)")
-plot_pacf(train, lags=25, ax=ax[2], method="ywm", zero=False)
+plot_pacf(train, lags=25, ax=ax[2], method="ols", zero=False)
 ax[2].set_title("PACF (cuts off -> AR order)")
 plt.tight_layout(); plt.savefig("ar_fig1_identify.png", dpi=110); plt.close()
 
 # ====================================================================
 # 步骤2  定阶: 三法交叉验证 (PACF截尾 / AIC-BIC网格 / 过拟合系数显著性)
 # ====================================================================
-MAXLAG = 12
+# MAXLAG: 定阶搜索上限. Schwert 规则 floor(12*(T/100)^0.25) 只依赖样本量 T, 与未知阶数无关 (黑盒下不能拿真值反推)
+MAXLAG = int(12 * (len(train) / 100) ** 0.25)
 print(SEP)
 print("步骤2  定阶 (三法交叉)")
+print(f"  搜索上限 MAXLAG = {MAXLAG}  (Schwert: floor(12*(T/100)^0.25), T={len(train)})")
 
 # 2a PACF 截尾: AR(p) 的 PACF 在 lag p 之后掉进置信带
-pac = pacf(train, nlags=MAXLAG, method="ywm")
+# method="ols": 嵌套 AR 回归的末系数 = 样本 PACF, 即 Tsay《金融时间序列分析》2.4.2 的定义
+pac = pacf(train, nlags=MAXLAG, method="ols")
 band = 1.96 / np.sqrt(len(train))
 sig = [k for k in range(1, MAXLAG + 1) if abs(pac[k]) > band]
 pacf_p = max(sig) if sig else 0
@@ -96,12 +99,12 @@ for k, (a, b) in rows.items():
     print(f"                    {k:>3} {a:>10.2f} {b:>10.2f}{mk}")
 print(f"       -> AIC 选 p={aic_p},  BIC 选 p={bic_p}")
 
-# 2c 过拟合 AR(6) 看系数显著性: 不显著的高阶项应剔除
-over = AutoReg(train, lags=6, trend="c", old_names=False).fit()
+# 2c 过拟合 AR(MAXLAG) 看系数显著性: 故意拟合到搜索上限, 不显著的高阶项应剔除
+over = AutoReg(train, lags=MAXLAG, trend="c", old_names=False).fit()
 sig_lags = [int(nm.split("L")[1]) for nm, pv in zip(over.params.index, over.pvalues.values)
             if nm.startswith("y.L") and pv < 0.05]
 sigcoef_p = max(sig_lags) if sig_lags else 0
-print(f"  [2c] 过拟合 AR(6): 显著的最高滞后 = {sigcoef_p}")
+print(f"  [2c] 过拟合 AR({MAXLAG}): 显著的最高滞后 = {sigcoef_p}")
 
 # 汇总投票 -> 以 BIC 为最终定阶
 p_hat = bic_p

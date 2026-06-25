@@ -71,7 +71,7 @@ ax[0].plot(train.values, lw=0.9)
 ax[0].axhline(train.mean(), color="r", ls="--", lw=1, label=f"mean={train.mean():.1f}")
 ax[0].set_title("Series (MA process, always stationary)"); ax[0].legend(loc="upper right")
 plot_acf(train, lags=25, ax=ax[1], zero=False); ax[1].set_title("ACF (cuts off -> MA order)")
-plot_pacf(train, lags=25, ax=ax[2], method="ywm", zero=False)
+plot_pacf(train, lags=25, ax=ax[2], method="ols", zero=False)
 ax[2].set_title("PACF (tails off -> MA)")
 plt.tight_layout(); plt.savefig("ma_fig1_identify.png", dpi=110); plt.close()
 
@@ -79,9 +79,11 @@ plt.tight_layout(); plt.savefig("ma_fig1_identify.png", dpi=110); plt.close()
 # 步骤2  定阶: 三法交叉验证 (ACF截尾 / AIC-BIC网格 / 过拟合系数显著性)
 #   口诀: MA(q) 的 ACF 在 lag q 之后截尾 (掉进置信带)
 # ====================================================================
-MAXLAG = 12
+# MAXLAG: 定阶搜索上限. Schwert 规则 floor(12*(T/100)^0.25) 只依赖样本量 T, 与未知阶数无关 (黑盒下不能拿真值反推)
+MAXLAG = int(12 * (len(train) / 100) ** 0.25)
 print(SEP)
 print("步骤2  定阶 (三法交叉)")
+print(f"  搜索上限 MAXLAG = {MAXLAG}  (Schwert: floor(12*(T/100)^0.25), T={len(train)})")
 
 # 2a ACF 截尾: MA(q) 的 ACF 在 lag q 之后掉进置信带
 #   关键: MA 定阶要用 Bartlett 公式置信带 (lag>q 后逐步变宽), 而非平直的 ±1.96/√n,
@@ -110,12 +112,12 @@ for k, (a, b) in rows.items():
     print(f"                    {k:>3} {a:>10.2f} {b:>10.2f}{mk}")
 print(f"       -> AIC 选 q={aic_q},  BIC 选 q={bic_q}")
 
-# 2c 过拟合 MA(6) 看系数显著性: 不显著的高阶项应剔除
-over = ARIMA(train, order=(0, 0, 6), trend="c").fit()
+# 2c 过拟合 MA(MAXLAG) 看系数显著性: 故意拟合到搜索上限, 不显著的高阶项应剔除
+over = ARIMA(train, order=(0, 0, MAXLAG), trend="c").fit()
 sig_lags = [int(nm.split("L")[1]) for nm, pv in zip(over.params.index, over.pvalues.values)
             if nm.startswith("ma.L") and pv < 0.05]
 sigcoef_q = max(sig_lags) if sig_lags else 0
-print(f"  [2c] 过拟合 MA(6): 显著的最高滞后 = {sigcoef_q}")
+print(f"  [2c] 过拟合 MA({MAXLAG}): 显著的最高滞后 = {sigcoef_q}")
 
 # 汇总投票 -> 以 BIC 为最终定阶
 q_hat = bic_q
