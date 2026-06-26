@@ -146,7 +146,7 @@ fig, ax = plt.subplots(3, 1, figsize=(10, 9))
 ax[0].plot(train.values, lw=.6, color="steelblue")
 ax[0].set_title(f"Log returns r_t  [mean: {mean_desc}]")
 plot_acf(train, lags=25, ax=ax[1], zero=False); ax[1].set_title("ACF of r_t")
-plot_pacf(train, lags=25, ax=ax[2], method="ywm", zero=False); ax[2].set_title("PACF of r_t")
+plot_pacf(train, lags=25, ax=ax[2], method="ols", zero=False); ax[2].set_title("PACF of r_t")
 plt.tight_layout(); plt.savefig("arch_fig1_mean.png", dpi=110); plt.close()
 
 # ====================================================================
@@ -166,8 +166,9 @@ print(f"  [方法2] Engle LM(lags=10): LM={lm_stat:.2f}, p={lm_p:.3g} -> "
 # 步骤3  定阶 m: a_t^2 的 PACF 截尾 + AIC/BIC 网格 (对 a_t 建模, mean='Zero')
 # ====================================================================
 print(SEP); print("步骤3  定阶 m (ARCH 阶数)")
-MAXLAG = 12
-pac = pacf(a2, nlags=MAXLAG, method="ywm"); band = 1.96 / np.sqrt(len(a2))
+MAXLAG = int(12 * (len(a2) / 100) ** 0.25)             # Schwert 规则: 只依赖样本量 T, 不偷看真值
+print(f"  搜索上限 MAXLAG = {MAXLAG}  (Schwert: floor(12*(T/100)^0.25), T={len(a2)})")
+pac = pacf(a2, nlags=MAXLAG, method="ols"); band = 1.96 / np.sqrt(len(a2))
 sig = [k for k in range(1, MAXLAG + 1) if abs(pac[k]) > band]
 pacf_m = max(sig) if sig else 1
 rows = {}
@@ -179,9 +180,11 @@ m_hat = bic_m
 print(f"  [3a] a_t^2 的 PACF 截尾: 最后显著 lag = {pacf_m} (band=±{band:.3f})")
 print(f"  [3b] AIC/BIC 网格 -> AIC 选 m={aic_m}, BIC 选 m={bic_m}")
 print(f"  投票: PACF={pacf_m} | AIC={aic_m} | BIC={bic_m}  >>> 最终定阶 m = {m_hat} (以BIC为准)")
+if m_hat == MAXLAG or pacf_m == MAXLAG:
+    print(f"  ⚠ 定阶贴到搜索上限 {MAXLAG} (可能被截断), 建议放大 MAXLAG 复核")
 
 fig, axx = plt.subplots(1, 2, figsize=(12, 4.5))
-plot_pacf(a2, lags=MAXLAG, ax=axx[0], method="ywm", zero=False)
+plot_pacf(a2, lags=MAXLAG, ax=axx[0], method="ols", zero=False)
 axx[0].set_title(f"PACF of a_t^2 (cuts off -> ARCH order ~{pacf_m})")
 ks = list(rows.keys())
 axx[1].plot(ks, [rows[k][0] for k in ks], "o-", label="AIC")

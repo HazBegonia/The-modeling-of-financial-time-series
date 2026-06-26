@@ -40,7 +40,7 @@ SEP = "=" * 70
 
 # ====================================================================
 # 步骤0  准备数据: 造"价格" -> 转对数收益率 r_t (平稳)
-#   均值真值 = ARMA(1,1); 波动真值 = GARCH(1,1)-t (alpha+beta=0.96, 高持续).
+#   均值真值 = ARMA(1,1); 波动真值 = GARCH(1,1)-t (alpha+beta=0.99, 极高持续).
 #   单位用"百分比收益"(x100), 量纲适中, 是 arch 包推荐做法.
 # ====================================================================
 omega, alpha_t, beta_t, nu = 0.04, 0.09, 0.90, 7.0     # GARCH(1,1)-t: alpha+beta=0.99 极高持续, df=7 厚尾
@@ -132,7 +132,7 @@ fig, ax = plt.subplots(3, 1, figsize=(10, 9))
 ax[0].plot(train.values, lw=.6, color="steelblue")
 ax[0].set_title(f"Log returns r_t  [mean: {mean_desc}]  —— note volatility clustering")
 plot_acf(train, lags=25, ax=ax[1], zero=False); ax[1].set_title("ACF of r_t (mean structure -> ARMA)")
-plot_pacf(train, lags=25, ax=ax[2], method="ywm", zero=False); ax[2].set_title("PACF of r_t")
+plot_pacf(train, lags=25, ax=ax[2], method="ols", zero=False); ax[2].set_title("PACF of r_t")
 plt.tight_layout(); plt.savefig("garch_fig1_mean.png", dpi=110); plt.close()
 
 # ====================================================================
@@ -150,11 +150,15 @@ print(f"  [方法2] Engle LM(lags=10): LM={lm_stat:.2f}, p={lm_p:.3g} -> "
 
 # ====================================================================
 # 步骤3  定阶 (p,q): a_t^2 的 ACF/PACF 双拖尾 -> (p,q) 二维 AIC/BIC 网格
-#   GARCH(p,q) 的 a_t^2 形似 ARMA(max(p,q), p) -> ACF/PACF 都拖尾, 读不出阶, 故走网格.
+#   GARCH(p,q) 的 a_t^2 形似 ARMA(max(p,q), q) -> ACF/PACF 都拖尾, 读不出阶, 故走网格.
 #   实务铁律: GARCH(1,1) 几乎是默认起点, 高阶很少更优.
 # ====================================================================
 print(SEP); print("步骤3  定阶 (p,q) (GARCH 阶数, 二维网格)")
-PMAX = QMAX = 2
+MAXLAG = int(12 * (len(a2) / 100) ** 0.25)             # Schwert 参考上限: 只依赖样本量 T, 不偷看真值
+GRIDMAX = min(MAXLAG, 3)                                # GARCH 高阶 MLE 难收敛/实证极少胜过低阶, 诚实截断(显式标注)
+PMAX = QMAX = GRIDMAX
+print(f"  Schwert 参考上限={MAXLAG} (floor(12*(T/100)^0.25), T={len(a2)}); "
+      f"GARCH 高阶 MLE 难收敛, 网格诚实截到 {GRIDMAX} (共 {PMAX * (QMAX + 1)} 个拟合)")
 ggrid_bic, ggrid_aic = {}, {}
 best_gic, best_gorder = np.inf, (1, 1)
 for p in range(1, PMAX + 1):                           # GARCH 的 p>=1 (q=0 即退化为 ARCH)
@@ -178,12 +182,14 @@ for p in range(1, PMAX + 1):
         cells += (f"{v:8.1f}{star} " if np.isfinite(v) else "   --     ")
     print(f"     p={p} {cells}")
 print(f"  AIC 选 (p,q)={aic_order} | BIC 选 (p,q)={best_gorder}  >>> 最终定阶 GARCH{best_gorder} (以BIC为准)")
+if p_hat == GRIDMAX or q_hat == GRIDMAX:
+    print(f"  ⚠ 定阶贴到网格上限 {GRIDMAX} (可能被截断), 建议放大 GRIDMAX 复核")
 print(f"  注: q=0 那列就是纯 ARCH; 通常含 beta 的 GARCH(1,1) 因'高持续'胜出, 印证 beta 项的价值.")
 
 fig, axx = plt.subplots(1, 2, figsize=(12, 4.5))
 plot_acf(a2, lags=25, ax=axx[0], zero=False)
 axx[0].set_title("ACF of a_t^2 (slow decay -> high persistence)")
-plot_pacf(a2, lags=25, ax=axx[1], method="ywm", zero=False)
+plot_pacf(a2, lags=25, ax=axx[1], method="ols", zero=False)
 axx[1].set_title("PACF of a_t^2 (both tail off -> use (p,q) grid)")
 plt.tight_layout(); plt.savefig("garch_fig2_order.png", dpi=110); plt.close()
 
