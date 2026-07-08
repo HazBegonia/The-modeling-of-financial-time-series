@@ -2,7 +2,6 @@
 
 > 配套代码：[igarch_demo.py](igarch_demo.py)（一条龙：均值 ARMA + 波动 IGARCH(1,1)-t）
 > 数据/产物：`igarch_returns.csv`（输入收益）、`igarch_forecast.csv`（预测输出）、`igarch_fig1~4_*.png`
-> 结构对照 [GARCH.md](../GARCH_demo/GARCH.md)、[EGARCH.md](../EGARCH_demo/EGARCH.md)、[TGARCH.md](../TGARCH_demo/TGARCH.md)。
 
 ---
 
