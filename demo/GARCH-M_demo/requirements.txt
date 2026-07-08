@@ -1,5 +1,5 @@
 # GARCH-M (GARCH-in-Mean 风险溢价) demo 依赖 (garchm_demo.py)
-# 均值=ARMA + in-mean 项 lambda*sigma_t^2; 波动=GARCH(p,q)-t
+# 均值=ARMA + in-mean 风险溢价项 c*g(sigma_t) (表 3-2: sigma^2/sigma/ln sigma^2, 步骤4 三选一); 波动=GARCH(m,s)-t
 # 因 in-mean 把波动喂回均值, 两方程耦合 -> 联合 MLE 手写(numpy/scipy), arch 包不支持 in-mean
 # (arch 仅用于 GARCH 定阶网格与给联合 MLE 提供起点; statsmodels 用于 ARMA 定阶/检验)
 numpy>=2.2
