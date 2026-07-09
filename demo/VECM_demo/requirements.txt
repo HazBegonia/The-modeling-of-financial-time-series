@@ -1,0 +1,10 @@
+# VECM (向量误差修正 / 协整) demo 依赖 (vecm_demo.py)
+# 两层定阶: 水平 VAR 阶 p(AIC/BIC/HQ) + 协整秩 r(Johansen 迹/最大特征值检验)
+# Johansen=两辅助回归净化 + 缩秩特征值问题(手写 numpy/scipy); 临界值查 Osterwald-Lenum 受限常数表
+# 检验=多元 Ljung-Box Q_k(m)+CCM 符号表+协整残差 ADF; 预测=ECM 递推 + Psi 权重误差协方差
+# statsmodels: adfuller(单位根) + VECM(deterministic="ci") 仅用于末尾交叉验证 beta/alpha
+numpy>=2.2
+scipy>=1.15
+pandas>=2.2
+matplotlib>=3.10
+statsmodels>=0.14
